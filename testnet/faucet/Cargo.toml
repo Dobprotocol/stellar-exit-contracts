@@ -1,0 +1,17 @@
+[package]
+name = "testnet-faucet"
+version = "0.1.0"
+edition = "2021"
+description = "Testnet-only token tap. Not part of the exit layer."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+
+[features]
+testutils = ["soroban-sdk/testutils"]

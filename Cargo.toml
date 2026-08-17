@@ -5,6 +5,8 @@ members = [
   "contracts/fifo_queue",
   "contracts/settlement_router",
   "contracts/exit_auction",
+  # Testnet scaffolding, not part of the layer. See testnet/faucet/src/lib.rs.
+  "testnet/faucet",
 ]
 
 [workspace.dependencies]

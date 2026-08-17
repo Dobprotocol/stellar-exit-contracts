@@ -25,8 +25,30 @@ SAC, so holders need no trustline.
 | Test USDC | `CCPNESXPESH5F7WOOWYPLPTLK2PICRP7DXGNGJPPH3YJ3XZVEGKAJL2I` | 7 |
 | Solar Farm Alpha (SFA) — the demo RWA | `CDPHF6JRRPAG2ZHEQCR3CG4JYBYDAEMPYIDSIWGGVUEJNRWAYG2E7VTS` | 0 |
 
-**These are test tokens with an open mint, held by the deployer.** They carry no value and
-are not the real USDC SAC. Mainnet USDC is `CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75`.
+**These are test tokens.** They carry no value and are not the real USDC SAC. Mainnet USDC
+is `CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75`.
+
+### Faucet — testnet scaffolding, not part of the layer
+
+`participation_token.mint` is admin-gated, so a person arriving with an empty wallet could
+not obtain either token and had nothing to sell or bid with. The faucet holds the **admin of
+both tokens** and hands out a drip on a cooldown to anyone who signs for it. It lives in
+`testnet/faucet/`, outside `contracts/`, and its error codes are 900–999 — clear of the
+layer's ranges. Nothing about it is intended for mainnet.
+
+| Contract ID | Cooldown | Drip |
+|---|---|---|
+| `CAJHMAFYVO7LDRUDQFYIJYSVXR6UJL55AR7LLU6EEWDFUVQSMWO6YV4G` | 3,600s per wallet per token | 10,000 USDC · 1,000 SFA |
+
+```bash
+stellar contract invoke --id CAJHMAFYVO7LDRUDQFYIJYSVXR6UJL55AR7LLU6EEWDFUVQSMWO6YV4G \
+  --source you --network testnet -- \
+  claim --to $(stellar keys address you) --token CCPNESXPESH5F7WOOWYPLPTLK2PICRP7DXGNGJPPH3YJ3XZVEGKAJL2I
+```
+
+A second claim inside the hour returns `Error(Contract, #904)` (`TooSoon`). `set_token_admin`
+hands the mint back if the faucet ever has to be replaced — the tokens themselves can only be
+initialized once, so that escape hatch is the only way to recover from a bad faucet.
 
 ### Configuration as deployed
 

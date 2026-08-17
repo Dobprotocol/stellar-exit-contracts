@@ -33,6 +33,11 @@ Error codes are disjoint on purpose. A vault refusal that surfaces through an au
 call keeps its own number instead of decoding as the auction's error with the same
 value — so a failed bid always says *which* contract said no, and why.
 
+`testnet/faucet` is a fifth contract and deliberately not one of these. The test tokens mint
+only for their admin, so nobody could try the layer with an empty wallet; the faucet holds
+that admin and hands out a drip on a cooldown. It sits outside `contracts/`, uses codes
+900–999, and has no business on mainnet.
+
 ### How they fit together
 
 ```
@@ -88,7 +93,7 @@ They are not the same kind of limit, and conflating them is how vaults go insolv
 ## Build & test
 
 ```bash
-cargo test                     # all four contracts, 51 tests
+cargo test                     # all four contracts, 51 tests (+11 for the faucet)
 cargo test -p lp-vault         # one
 
 stellar contract build         # wasm for deployment -> target/wasm32v1-none/release/

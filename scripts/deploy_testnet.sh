@@ -93,6 +93,18 @@ inv "$VAULT" "$NODE_B" set_appetite --node "$B" --asset "$RWA" \
 inv "$AUCTION" "$SELLER" open_exit --seller "$S" --asset "$RWA" --amount 1000 \
      --reference_usdc 1000000000000 --min_accept_usdc 940000000000 --duration 86400 >/dev/null
 
+# ── faucet ──────────────────────────────────────────────────────────────────
+# Not part of the layer. It goes last on purpose: it takes the mint away from
+# the deployer, so every mint above has to have happened already.
+say "faucet"
+FAUCET=$(stellar contract deploy --wasm "$OUT/testnet_faucet.wasm" --source "$DEPLOYER" --network $NETWORK | tail -1)
+inv "$FAUCET" "$DEPLOYER" initialize --admin "$ADMIN" --cooldown 3600 >/dev/null
+inv "$FAUCET" "$DEPLOYER" set_drip --token "$USDC" --amount 100000000000 >/dev/null  # 10k USDC
+inv "$FAUCET" "$DEPLOYER" set_drip --token "$RWA"  --amount 1000 >/dev/null          # 1k shares
+inv "$USDC"   "$DEPLOYER" set_admin --new_admin "$FAUCET" >/dev/null
+inv "$RWA"    "$DEPLOYER" set_admin --new_admin "$FAUCET" >/dev/null
+echo "  faucet $FAUCET (holds the mint for both tokens from here on)"
+
 cat <<EOF
 
 Done.
@@ -103,6 +115,7 @@ Done.
   exit_auction       $AUCTION
   USDC (test)        $USDC
   RWA  (test)        $RWA
+  faucet             $FAUCET
 
 Exit #1 is open. Bidding on it fails with Error(Contract, #24) — lp_vault's
 BackingTooYoung — until the appetites set above are MIN_BACKING_AGE (1h) old.
