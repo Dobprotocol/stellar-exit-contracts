@@ -22,12 +22,47 @@ primary market's own listing book instead and keep the spread.
 
 ## Contracts
 
-| Contract | Owns | Status |
-|---|---|---|
-| `lp_vault` | Liquidity Node capital and the standing terms each Node offers per asset | **built, 17 tests** |
-| `exit_auction` | The exit lifecycle: open, bid, close | in build |
-| `settlement_router` | Escrow, and the single atomic transfer that clears an exit | in build |
-| `fifo_queue` | Exits with no acceptable bid, in a public, unjumpable line | in build |
+| Contract | Owns | Error codes | Tests |
+|---|---|---|---|
+| `lp_vault` | Liquidity Node capital and the standing terms each Node offers per asset | 1–99 | 17 |
+| `settlement_router` | Escrow, and the single atomic transfer that clears an exit | 100–199 | 12 |
+| `fifo_queue` | Exits with no acceptable bid, in a public, unjumpable line | 200–299 | 7 |
+| `exit_auction` | The exit lifecycle: open, bid, accept, close, cancel | 300–399 | 15 |
+
+Error codes are disjoint on purpose. A vault refusal that surfaces through an auction
+call keeps its own number instead of decoding as the auction's error with the same
+value — so a failed bid always says *which* contract said no, and why.
+
+### How they fit together
+
+```
+              exit_auction ─── decides who fills and at what price
+                   │
+      ┌────────────┼────────────┐
+      ▼            ▼            ▼
+  lp_vault   settlement_router   fifo_queue
+  capital &   escrow + the only   the public
+  standing    contract that       waiting line
+  terms       moves value
+```
+
+The auction is the only caller any of the other three accept. It holds no funds itself:
+the vault knows whether a Node's capital is really there, the router performs the
+transfer or reverts, and the queue records who was waiting first.
+
+### Three rules the auction enforces
+
+* **Price-only priority.** The highest gross bid wins. No size preference, no fee tier,
+  no privileged Node. Matching the standing bid is not beating it.
+* **The line is respected at fill time.** While an asset has a queue, only the exit at
+  its head can settle. Bidding on the others stays open — nobody buys their way past a
+  seller who has been waiting.
+* **The seller is never obligated.** A bid is an offer; accepting it is a separate
+  signature. Cancelling costs the seller nothing and pays the bidder nothing.
+
+Bids are **absolute USDC amounts**, not discounts. Whatever reference the seller declared
+and whatever any price feed says, a Node can only ever be held to the number it named
+itself — the discount in the events is derived for readability, not for settlement.
 
 ### Where pricing lives
 
@@ -53,11 +88,15 @@ They are not the same kind of limit, and conflating them is how vaults go insolv
 ## Build & test
 
 ```bash
-cargo test                     # all contracts
+cargo test                     # all four contracts, 51 tests
 cargo test -p lp-vault         # one
 
-cargo build --release --target wasm32-unknown-unknown -p lp-vault
+cargo build --release --target wasm32-unknown-unknown
 ```
+
+The contracts talk to each other through declared client interfaces rather than crate
+imports, so no contract's code is compiled into another's wasm. The test suite links the
+real ones and runs the whole layer end to end.
 
 `Cargo.lock` is committed on purpose — reproducible builds are the point of SEP-55
 attestation.

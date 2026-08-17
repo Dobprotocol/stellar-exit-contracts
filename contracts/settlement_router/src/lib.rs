@@ -17,19 +17,23 @@ pub const BPS_DENOMINATOR: i128 = 10_000;
 /// lever for confiscating a settlement after the fact.
 pub const MAX_PROTOCOL_FEE_BPS: u32 = 500;
 
+/// Error codes are disjoint across the layer — lp_vault 1-99, settlement_router
+/// 100-199, fifo_queue 200-299, exit_auction 300-399 — so a code that surfaces
+/// through a cross-contract call still says which contract refused, instead of
+/// being decoded as the caller's own error with the same number.
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
-    AlreadyInitialized = 1,
-    NotInitialized = 2,
-    NotAuction = 3,
-    NotWired = 4,
-    InvalidAmount = 10,
-    InvalidBps = 11,
-    AlreadyEscrowed = 12,
-    NothingEscrowed = 13,
-    ExceedsEscrow = 14,
+    AlreadyInitialized = 101,
+    NotInitialized = 102,
+    NotAuction = 103,
+    NotWired = 104,
+    InvalidAmount = 110,
+    InvalidBps = 111,
+    AlreadyEscrowed = 112,
+    NothingEscrowed = 113,
+    ExceedsEscrow = 114,
 }
 
 /// The only thing the router needs from the vault: move a node's committed

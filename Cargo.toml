@@ -4,6 +4,7 @@ members = [
   "contracts/lp_vault",
   "contracts/fifo_queue",
   "contracts/settlement_router",
+  "contracts/exit_auction",
 ]
 
 [workspace.dependencies]

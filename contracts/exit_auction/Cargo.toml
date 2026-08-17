@@ -1,0 +1,23 @@
+[package]
+name = "exit-auction"
+version = "0.1.0"
+edition = "2021"
+description = "Sealed-size, price-only exit auction for DobDex participation tokens"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+
+# The three contracts the auction drives are dev-dependencies only: it talks to
+# them through declared client interfaces, so none of their code lands in this
+# wasm. Tests link the real ones and run the whole layer end to end.
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+lp-vault = { path = "../lp_vault", features = ["testutils"] }
+settlement-router = { path = "../settlement_router", features = ["testutils"] }
+fifo-queue = { path = "../fifo_queue", features = ["testutils"] }
+
+[features]
+testutils = ["soroban-sdk/testutils"]

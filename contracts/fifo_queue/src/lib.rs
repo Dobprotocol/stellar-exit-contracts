@@ -13,16 +13,20 @@ const LIFETIME_THRESHOLD: u32 = BUMP_AMOUNT - DAY_IN_LEDGERS;
 /// an exit it cannot account for.
 pub const MAX_QUEUE_DEPTH: u32 = 200;
 
+/// Error codes are disjoint across the layer — lp_vault 1-99, settlement_router
+/// 100-199, fifo_queue 200-299, exit_auction 300-399 — so a code that surfaces
+/// through a cross-contract call still says which contract refused, instead of
+/// being decoded as the caller's own error with the same number.
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
-    AlreadyInitialized = 1,
-    NotInitialized = 2,
-    NotAuction = 3,
-    AlreadyQueued = 4,
-    NotQueued = 5,
-    QueueFull = 6,
+    AlreadyInitialized = 201,
+    NotInitialized = 202,
+    NotAuction = 203,
+    AlreadyQueued = 204,
+    NotQueued = 205,
+    QueueFull = 206,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
