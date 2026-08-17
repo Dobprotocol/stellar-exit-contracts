@@ -1,0 +1,21 @@
+[package]
+name = "settlement-router"
+version = "0.1.0"
+edition = "2021"
+description = "Escrow and atomic settlement for the DobDex exit layer"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+
+# lp_vault is only a dev-dependency: the router talks to the vault through a
+# declared client interface, so the vault's code is never compiled into the
+# router's wasm. Tests link the real thing and settle against it.
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+lp-vault = { path = "../lp_vault", features = ["testutils"] }
+
+[features]
+testutils = ["soroban-sdk/testutils"]

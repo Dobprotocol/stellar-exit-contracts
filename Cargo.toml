@@ -3,6 +3,7 @@ resolver = "2"
 members = [
   "contracts/lp_vault",
   "contracts/fifo_queue",
+  "contracts/settlement_router",
 ]
 
 [workspace.dependencies]
