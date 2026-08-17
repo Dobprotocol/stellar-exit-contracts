@@ -68,11 +68,30 @@ fifo_queue.set_auction(exit_auction)
 
 | Role | Account | State |
 |---|---|---|
-| Liquidity Node A | `GCZFZW64L62XPRMGA6I5ITGPRXCLMQ63DE3VH4CRLNBFL7NFQ2AUZS3W` | 400,000 USDC deposited · appetite on SFA: 200,000 ceiling, 300 bps floor |
-| Liquidity Node B | `GBKP7AT3WUNEUAGTUIEUEQDKNTW7LFYOLFFPHEFBF5JTZFEUSZAAL7LU` | 250,000 USDC deposited · appetite on SFA: 150,000 ceiling, 450 bps floor |
-| Seller | `GDMETA6S2CSA7CRYGKTV24LBNKOBMU2UKKTRAE224J4ZRUDLMX6UPX7Q` | 10,000 SFA minted; 1,000 escrowed in exit #1 |
+| Liquidity Node A | `GCZFZW64L62XPRMGA6I5ITGPRXCLMQ63DE3VH4CRLNBFL7NFQ2AUZS3W` | 304,000 USDC deposited · 1,000 SFA held · appetite on SFA: 200,000 ceiling, 300 bps floor, 96,000 exposed |
+| Liquidity Node B | `GBKP7AT3WUNEUAGTUIEUEQDKNTW7LFYOLFFPHEFBF5JTZFEUSZAAL7LU` | 250,000 USDC deposited · appetite on SFA: 150,000 ceiling, 450 bps floor, nothing exposed |
+| Seller | `GDMETA6S2CSA7CRYGKTV24LBNKOBMU2UKKTRAE224J4ZRUDLMX6UPX7Q` | 9,000 SFA · 95,040 USDC from exit #1 |
 
-Exit #1 is open: 1,000 SFA, reference 100,000 USDC, floor 94,000 USDC, 24h window.
+Exit #1 was 1,000 SFA against a 100,000 USDC reference with a 94,000 floor. It settled at
+96,000 to Node A: seller 95,040, treasury 960 (the 100 bps fee), Node A the 1,000 SFA.
+`status` is now 1.
+
+### What the settlement proved
+
+Two refusals on the way there, both correct, and worth keeping because they are the design
+working rather than failing:
+
+* Node B bid **96,000 to match** Node A → `Error(Contract, #323)`, `exit_auction::BidTooLow`.
+  Matching the standing bid is not beating it.
+* Node B then bid **96,500 to beat it** → `Error(Contract, #23)`, `lp_vault::DiscountBelowFloor`.
+  96,500 against a 100,000 reference is a 350 bps discount and B's own floor is 450 bps. B
+  cannot be talked into paying more than its standing terms allow — not even by itself.
+
+Consecutive `place_bid` calls, refused by two different contracts, each keeping its own
+number. That is what the disjoint ranges buy.
+
+Node A's exposure stayed at 96,000 **after** the payout. That is deliberate: A now holds the
+asset, and only A can mark the position divested.
 
 ### `MIN_BACKING_AGE` gates the first bid
 
