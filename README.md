@@ -91,8 +91,13 @@ They are not the same kind of limit, and conflating them is how vaults go insolv
 cargo test                     # all four contracts, 51 tests
 cargo test -p lp-vault         # one
 
-cargo build --release --target wasm32-unknown-unknown
+stellar contract build         # wasm for deployment -> target/wasm32v1-none/release/
 ```
+
+Build the wasm with `stellar contract build`, not `cargo build --target wasm32-unknown-unknown`.
+Current Rust emits the reference-types proposal for that target, which the Soroban VM rejects at
+upload time with `Module(Translation(... "reference-types not enabled" ...))`. The `wasm32v1-none`
+target the CLI selects does not.
 
 The contracts talk to each other through declared client interfaces rather than crate
 imports, so no contract's code is compiled into another's wasm. The test suite links the
@@ -108,7 +113,8 @@ attestation.
 | Testnet | 9 | `https://soroban-testnet.stellar.org` |
 | Mainnet | 10 | `https://mainnet.sorobanrpc.com` |
 
-Nothing is deployed yet.
+Live on **testnet** since 2026-08-17 — contract IDs, wiring, and the demo state in
+[`DEPLOYMENTS.md`](DEPLOYMENTS.md). Nothing is deployed to mainnet.
 
 ## License
 
