@@ -95,7 +95,9 @@ impl TestnetFaucet {
         e.storage()
             .instance()
             .set(&DataKey::Config, &Config { admin, cooldown });
-        e.storage().instance().set(&DataKey::Tokens, &Vec::<Address>::new(&e));
+        e.storage()
+            .instance()
+            .set(&DataKey::Tokens, &Vec::<Address>::new(&e));
         Ok(())
     }
 
@@ -108,7 +110,9 @@ impl TestnetFaucet {
             return Err(Error::InvalidAmount);
         }
 
-        e.storage().persistent().set(&DataKey::Drip(token.clone()), &amount);
+        e.storage()
+            .persistent()
+            .set(&DataKey::Drip(token.clone()), &amount);
         e.storage().persistent().extend_ttl(
             &DataKey::Drip(token.clone()),
             LIFETIME_THRESHOLD,
@@ -202,7 +206,11 @@ impl TestnetFaucet {
             return Ok(0);
         }
         let next = last.saturating_add(config.cooldown);
-        Ok(if e.ledger().timestamp() >= next { 0 } else { next })
+        Ok(if e.ledger().timestamp() >= next {
+            0
+        } else {
+            next
+        })
     }
 
     pub fn get_config(e: Env) -> Result<Config, Error> {

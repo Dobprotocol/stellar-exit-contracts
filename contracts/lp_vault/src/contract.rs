@@ -128,11 +128,7 @@ impl LpVault {
             return Err(Error::BelowMinDeposit);
         }
 
-        token::Client::new(&e, &config.usdc).transfer(
-            &node,
-            &e.current_contract_address(),
-            &amount,
-        );
+        token::Client::new(&e, &config.usdc).transfer(&node, e.current_contract_address(), &amount);
 
         state.deposited += amount;
         storage::write_node(&e, &node, &state);

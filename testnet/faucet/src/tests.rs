@@ -1,4 +1,3 @@
-#![cfg(test)]
 extern crate std;
 
 use soroban_sdk::{
@@ -8,7 +7,7 @@ use soroban_sdk::{
 
 use crate::{Error, TestnetFaucet, TestnetFaucetClient, DEFAULT_COOLDOWN};
 
-const DRIP: i128 = 10_000_0000000; // 10,000 USDC at 7 decimals
+const DRIP: i128 = 10_000 * 10_000_000; // 10,000 USDC at 7 decimals
 
 struct Fixture<'a> {
     e: Env,
@@ -68,13 +67,9 @@ fn a_second_claim_waits_out_the_cooldown() {
     let user = Address::generate(&f.e);
     f.faucet.claim(&user, &f.token);
 
-    assert_eq!(
-        f.faucet.try_claim(&user, &f.token),
-        Err(Ok(Error::TooSoon.into()))
-    );
+    assert_eq!(f.faucet.try_claim(&user, &f.token), Err(Ok(Error::TooSoon)));
 
-    f.e.ledger()
-        .set_timestamp(1_000_000 + DEFAULT_COOLDOWN);
+    f.e.ledger().set_timestamp(1_000_000 + DEFAULT_COOLDOWN);
     assert_eq!(f.faucet.claim(&user, &f.token), DRIP);
     assert_eq!(f.bal.balance(&user), DRIP * 2);
 }
@@ -99,7 +94,7 @@ fn an_unregistered_token_is_refused() {
 
     assert_eq!(
         f.faucet.try_claim(&user, &other),
-        Err(Ok(Error::UnknownToken.into()))
+        Err(Ok(Error::UnknownToken))
     );
 }
 
@@ -111,7 +106,7 @@ fn a_zero_drip_closes_the_tap() {
 
     assert_eq!(
         f.faucet.try_claim(&user, &f.token),
-        Err(Ok(Error::UnknownToken.into()))
+        Err(Ok(Error::UnknownToken))
     );
 }
 
@@ -127,8 +122,7 @@ fn next_claim_reports_the_wait() {
         1_000_000 + DEFAULT_COOLDOWN
     );
 
-    f.e.ledger()
-        .set_timestamp(1_000_000 + DEFAULT_COOLDOWN);
+    f.e.ledger().set_timestamp(1_000_000 + DEFAULT_COOLDOWN);
     assert_eq!(f.faucet.next_claim(&user, &f.token), 0);
 }
 
@@ -160,7 +154,7 @@ fn a_negative_drip_is_refused() {
     let f = setup();
     assert_eq!(
         f.faucet.try_set_drip(&f.token, &-1),
-        Err(Ok(Error::InvalidAmount.into()))
+        Err(Ok(Error::InvalidAmount))
     );
 }
 
@@ -169,6 +163,6 @@ fn it_initializes_once() {
     let f = setup();
     assert_eq!(
         f.faucet.try_initialize(&f.admin, &DEFAULT_COOLDOWN),
-        Err(Ok(Error::AlreadyInitialized.into()))
+        Err(Ok(Error::AlreadyInitialized))
     );
 }

@@ -1,4 +1,3 @@
-#![cfg(test)]
 extern crate std;
 
 use soroban_sdk::{
@@ -153,7 +152,10 @@ fn only_the_auction_moves_value() {
         router.try_escrow(&1, &who, &Address::generate(&e), &1),
         Err(Ok(Error::NotWired))
     );
-    assert_eq!(router.try_settle(&1, &who, &1, &1), Err(Ok(Error::NotWired)));
+    assert_eq!(
+        router.try_settle(&1, &who, &1, &1),
+        Err(Ok(Error::NotWired))
+    );
     assert_eq!(router.try_refund(&1), Err(Ok(Error::NotWired)));
 }
 
@@ -174,7 +176,10 @@ fn settlement_moves_both_legs_and_takes_the_fee_out_of_the_sellers_side() {
     assert_eq!(f.usdc_bal.balance(&f.seller), 9_200 * USDC - fee);
     assert_eq!(f.usdc_bal.balance(&f.treasury), fee);
     // The node paid the full gross: the fee comes out of the bid, not on top.
-    assert_eq!(f.usdc_bal.balance(&f.vault.address), 10_000 * USDC - 9_200 * USDC);
+    assert_eq!(
+        f.usdc_bal.balance(&f.vault.address),
+        10_000 * USDC - 9_200 * USDC
+    );
 
     // Asset leg: the node holds the position now, the router holds nothing.
     assert_eq!(f.asset_bal.balance(&node), 100 * SHARE);
@@ -213,7 +218,7 @@ fn nothing_can_be_paid_for_tokens_that_were_never_escrowed() {
     );
     // A different exit id has no escrow at all.
     assert_eq!(
-        f.router.try_settle(&2, &node, &(1 * SHARE), &(1 * USDC)),
+        f.router.try_settle(&2, &node, &SHARE, &USDC),
         Err(Ok(Error::NothingEscrowed))
     );
 }
@@ -298,14 +303,12 @@ fn a_cancelled_exit_returns_everything_to_the_seller() {
 fn the_protocol_fee_has_a_ceiling_the_admin_cannot_pass() {
     let f = setup();
     assert_eq!(
-        f.router.try_set_protocol_fee_bps(&(MAX_PROTOCOL_FEE_BPS + 1)),
+        f.router
+            .try_set_protocol_fee_bps(&(MAX_PROTOCOL_FEE_BPS + 1)),
         Err(Ok(Error::InvalidBps))
     );
     f.router.set_protocol_fee_bps(&MAX_PROTOCOL_FEE_BPS);
-    assert_eq!(
-        f.router.get_config().protocol_fee_bps,
-        MAX_PROTOCOL_FEE_BPS
-    );
+    assert_eq!(f.router.get_config().protocol_fee_bps, MAX_PROTOCOL_FEE_BPS);
 
     let e = Env::default();
     e.mock_all_auths();

@@ -499,12 +499,7 @@ impl ExitAuction {
         let config = Self::config(e)?;
         let node = exit.best_node.clone().ok_or(Error::NoBids)?;
 
-        RouterClient::new(e, &config.router).settle(
-            &exit.id,
-            &node,
-            &exit.amount,
-            &exit.best_usdc,
-        );
+        RouterClient::new(e, &config.router).settle(&exit.id, &node, &exit.amount, &exit.best_usdc);
 
         if exit.status == Status::Queued {
             QueueClient::new(e, &config.queue).dequeue(&exit.asset, &exit.id);

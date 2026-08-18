@@ -1,4 +1,3 @@
-#![cfg(test)]
 extern crate std;
 
 use soroban_sdk::{testutils::Address as _, Address, Env};
@@ -78,10 +77,7 @@ fn the_queue_is_bounded() {
         queue.enqueue(&asset, &id);
     }
     assert_eq!(queue.depth(&asset), MAX_QUEUE_DEPTH);
-    assert_eq!(
-        queue.try_enqueue(&asset, &999),
-        Err(Ok(Error::QueueFull))
-    );
+    assert_eq!(queue.try_enqueue(&asset, &999), Err(Ok(Error::QueueFull)));
 }
 
 #[test]

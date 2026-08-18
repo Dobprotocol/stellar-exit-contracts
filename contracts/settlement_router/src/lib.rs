@@ -227,11 +227,7 @@ impl SettlementRouter {
             return Err(Error::AlreadyEscrowed);
         }
 
-        token::Client::new(&e, &asset).transfer(
-            &seller,
-            &e.current_contract_address(),
-            &amount,
-        );
+        token::Client::new(&e, &asset).transfer(&seller, e.current_contract_address(), &amount);
 
         Self::write_escrow(
             &e,

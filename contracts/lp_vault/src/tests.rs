@@ -1,4 +1,3 @@
-#![cfg(test)]
 extern crate std;
 
 use soroban_sdk::{
@@ -96,7 +95,7 @@ fn deposit_below_min_is_rejected_only_for_the_first_one() {
 
     f.vault.deposit(&node, &(100 * USDC));
     // Topping up an existing node is not subject to the minimum.
-    f.vault.deposit(&node, &(1 * USDC));
+    f.vault.deposit(&node, &USDC);
     assert_eq!(f.vault.get_node(&node).deposited, 101 * USDC);
 }
 
@@ -111,13 +110,11 @@ fn commit_cannot_exceed_free_balance() {
     f.vault.set_max_single_fill_bps(&10_000);
     let node = f.node_with_backing(1_000 * USDC, 10_000 * USDC, 100);
 
-    f.vault
-        .commit(&node, &f.asset, &(600 * USDC), &500);
+    f.vault.commit(&node, &f.asset, &(600 * USDC), &500);
     assert_eq!(f.vault.free_balance(&node), 400 * USDC);
 
     assert_eq!(
-        f.vault
-            .try_commit(&node, &f.asset, &(401 * USDC), &500),
+        f.vault.try_commit(&node, &f.asset, &(401 * USDC), &500),
         Err(Ok(Error::InsufficientFreeBalance))
     );
 }
@@ -132,12 +129,10 @@ fn a_pending_withdrawal_is_reserved_against_new_commitments() {
     assert_eq!(f.vault.free_balance(&node), 300 * USDC);
 
     assert_eq!(
-        f.vault
-            .try_commit(&node, &f.asset, &(400 * USDC), &500),
+        f.vault.try_commit(&node, &f.asset, &(400 * USDC), &500),
         Err(Ok(Error::InsufficientFreeBalance))
     );
-    f.vault
-        .commit(&node, &f.asset, &(300 * USDC), &500);
+    f.vault.commit(&node, &f.asset, &(300 * USDC), &500);
 }
 
 #[test]
@@ -156,8 +151,7 @@ fn a_requested_withdrawal_survives_everything_committed_after_it() {
     // The reservation is what makes this safe: the node can commit its remaining
     // 500 and see it paid out, and the withdrawal is still fully covered after.
     f.vault.commit(&node, &f.asset, &(500 * USDC), &500);
-    f.vault
-        .pay_out(&node, &f.asset, &seller, &(500 * USDC));
+    f.vault.pay_out(&node, &f.asset, &seller, &(500 * USDC));
 
     let now = f.e.ledger().timestamp();
     f.e.ledger().set_timestamp(now + 24 * 60 * 60 + 1);
@@ -201,12 +195,10 @@ fn a_bid_below_the_nodes_own_floor_is_refused() {
     let node = f.node_with_backing(1_000 * USDC, 10_000 * USDC, 450);
 
     assert_eq!(
-        f.vault
-            .try_commit(&node, &f.asset, &(100 * USDC), &449),
+        f.vault.try_commit(&node, &f.asset, &(100 * USDC), &449),
         Err(Ok(Error::DiscountBelowFloor))
     );
-    f.vault
-        .commit(&node, &f.asset, &(100 * USDC), &450);
+    f.vault.commit(&node, &f.asset, &(100 * USDC), &450);
 }
 
 #[test]
@@ -219,15 +211,13 @@ fn a_fresh_backing_cannot_fill_yet() {
         .set_appetite(&node, &f.asset, &(10_000 * USDC), &100, &true);
 
     assert_eq!(
-        f.vault
-            .try_commit(&node, &f.asset, &(100 * USDC), &500),
+        f.vault.try_commit(&node, &f.asset, &(100 * USDC), &500),
         Err(Ok(Error::BackingTooYoung))
     );
     assert_eq!(f.vault.quote_capacity(&node, &f.asset, &500), 0);
 
     f.age_backing();
-    f.vault
-        .commit(&node, &f.asset, &(100 * USDC), &500);
+    f.vault.commit(&node, &f.asset, &(100 * USDC), &500);
 }
 
 #[test]
@@ -236,10 +226,9 @@ fn exposure_ceiling_is_enforced() {
     f.vault.set_max_single_fill_bps(&10_000);
     let node = f.node_with_backing(1_000 * USDC, 300 * USDC, 100);
 
-    f.vault
-        .commit(&node, &f.asset, &(300 * USDC), &500);
+    f.vault.commit(&node, &f.asset, &(300 * USDC), &500);
     assert_eq!(
-        f.vault.try_commit(&node, &f.asset, &(1 * USDC), &500),
+        f.vault.try_commit(&node, &f.asset, &USDC, &500),
         Err(Ok(Error::ExposureExceeded))
     );
 }
@@ -251,12 +240,10 @@ fn one_exit_cannot_take_more_than_the_single_fill_cap() {
     let node = f.node_with_backing(1_000 * USDC, 10_000 * USDC, 100);
 
     assert_eq!(
-        f.vault
-            .try_commit(&node, &f.asset, &(301 * USDC), &500),
+        f.vault.try_commit(&node, &f.asset, &(301 * USDC), &500),
         Err(Ok(Error::SingleFillCapExceeded))
     );
-    f.vault
-        .commit(&node, &f.asset, &(300 * USDC), &500);
+    f.vault.commit(&node, &f.asset, &(300 * USDC), &500);
     assert_eq!(f.vault.quote_capacity(&node, &f.asset, &500), 300 * USDC);
 }
 
@@ -268,8 +255,7 @@ fn deactivating_appetite_stops_new_fills_without_touching_capital() {
         .set_appetite(&node, &f.asset, &(10_000 * USDC), &100, &false);
 
     assert_eq!(
-        f.vault
-            .try_commit(&node, &f.asset, &(100 * USDC), &500),
+        f.vault.try_commit(&node, &f.asset, &(100 * USDC), &500),
         Err(Ok(Error::AppetiteInactive))
     );
     assert_eq!(f.vault.free_balance(&node), 1_000 * USDC);
@@ -287,8 +273,7 @@ fn re_arming_a_backing_restarts_the_age_clock() {
         .set_appetite(&node, &f.asset, &(10_000 * USDC), &100, &true);
 
     assert_eq!(
-        f.vault
-            .try_commit(&node, &f.asset, &(100 * USDC), &500),
+        f.vault.try_commit(&node, &f.asset, &(100 * USDC), &500),
         Err(Ok(Error::BackingTooYoung))
     );
 }
@@ -303,10 +288,8 @@ fn pay_out_moves_usdc_and_keeps_the_position_on_the_books() {
     let node = f.node_with_backing(1_000 * USDC, 10_000 * USDC, 100);
     let seller = Address::generate(&f.e);
 
-    f.vault
-        .commit(&node, &f.asset, &(300 * USDC), &500);
-    f.vault
-        .pay_out(&node, &f.asset, &seller, &(300 * USDC));
+    f.vault.commit(&node, &f.asset, &(300 * USDC), &500);
+    f.vault.pay_out(&node, &f.asset, &seller, &(300 * USDC));
 
     let sac = token::Client::new(&f.e, &f.usdc.address);
     assert_eq!(sac.balance(&seller), 300 * USDC);
@@ -327,8 +310,7 @@ fn release_returns_the_capital_and_the_headroom() {
     let f = setup();
     let node = f.node_with_backing(1_000 * USDC, 10_000 * USDC, 100);
 
-    f.vault
-        .commit(&node, &f.asset, &(300 * USDC), &500);
+    f.vault.commit(&node, &f.asset, &(300 * USDC), &500);
     f.vault.release(&node, &f.asset, &(300 * USDC));
 
     assert_eq!(f.vault.get_node(&node).committed, 0);
@@ -342,15 +324,13 @@ fn nothing_can_be_released_or_paid_beyond_what_was_committed() {
     let node = f.node_with_backing(1_000 * USDC, 10_000 * USDC, 100);
     let seller = Address::generate(&f.e);
 
-    f.vault
-        .commit(&node, &f.asset, &(100 * USDC), &500);
+    f.vault.commit(&node, &f.asset, &(100 * USDC), &500);
     assert_eq!(
         f.vault.try_release(&node, &f.asset, &(101 * USDC)),
         Err(Ok(Error::CommitUnderflow))
     );
     assert_eq!(
-        f.vault
-            .try_pay_out(&node, &f.asset, &seller, &(101 * USDC)),
+        f.vault.try_pay_out(&node, &f.asset, &seller, &(101 * USDC)),
         Err(Ok(Error::CommitUnderflow))
     );
 }
@@ -373,11 +353,11 @@ fn commit_and_pay_out_need_the_wired_contracts() {
     let node = Address::generate(&e);
     let asset = Address::generate(&e);
     assert_eq!(
-        vault.try_commit(&node, &asset, &(1 * USDC), &500),
+        vault.try_commit(&node, &asset, &USDC, &500),
         Err(Ok(Error::NotWired))
     );
     assert_eq!(
-        vault.try_pay_out(&node, &asset, &node, &(1 * USDC)),
+        vault.try_pay_out(&node, &asset, &node, &USDC),
         Err(Ok(Error::NotWired))
     );
 }
