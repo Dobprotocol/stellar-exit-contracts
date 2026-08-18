@@ -78,17 +78,38 @@ fifo_queue.set_auction(exit_auction)
 
 ### Demo state on testnet
 
+Updated 2026-08-18, after seven exits across the two demo assets.
+
 | Role | Account | State |
 |---|---|---|
-| Liquidity Node A | `GCZFZW64L62XPRMGA6I5ITGPRXCLMQ63DE3VH4CRLNBFL7NFQ2AUZS3W` | 304,000 USDC deposited · 1,000 SFA held · appetite on SFA: 200,000 ceiling, 300 bps floor, 96,000 exposed |
-| Liquidity Node B | `GBKP7AT3WUNEUAGTUIEUEQDKNTW7LFYOLFFPHEFBF5JTZFEUSZAAL7LU` | 250,000 USDC deposited · appetite on SFA: 150,000 ceiling, 450 bps floor, nothing exposed |
-| Seller | `GDMETA6S2CSA7CRYGKTV24LBNKOBMU2UKKTRAE224J4ZRUDLMX6UPX7Q` | 9,000 SFA · 95,040 USDC from exit #1 |
+| Liquidity Node A | `GCZFZW64L62XPRMGA6I5ITGPRXCLMQ63DE3VH4CRLNBFL7NFQ2AUZS3W` | 207,500 USDC deposited, 192,500 of it filled · holds 1,500 SFA + 500 ECH · appetite on SFA: 200,000 ceiling, 300 bps floor, 144,500 exposed · on ECH: 100,000 ceiling, 250 bps floor, 48,000 exposed |
+| Liquidity Node B | `GBKP7AT3WUNEUAGTUIEUEQDKNTW7LFYOLFFPHEFBF5JTZFEUSZAAL7LU` | 250,000 USDC deposited, 141,850 committed against live bids · appetite on SFA: 150,000 ceiling, 450 bps floor, 66,850 exposed · on ECH: 80,000 ceiling, 400 bps floor, 75,000 exposed |
+| Seller | `GDMETA6S2CSA7CRYGKTV24LBNKOBMU2UKKTRAE224J4ZRUDLMX6UPX7Q` | 7,500 SFA · 8,500 ECH · 190,575 USDC from the three settlements |
 
-Exit #1 was 1,000 SFA against a 100,000 USDC reference with a 94,000 floor. It settled at
-96,000 to Node A: seller 95,040, treasury 960 (the 100 bps fee), Node A the 1,000 SFA.
-`status` is now 1.
+Every exit the auction has seen, and the state it is in. Amounts are USDC; the fee is 100 bps
+of the gross in all three settlements.
 
-### What the settlement proved
+| # | Asset | Amount | Reference | Floor | State |
+|---|---|---|---|---|---|
+| 1 | SFA | 1,000 | 100,000 | 94,000 | **Settled** at 96,000 to Node A — seller 95,040, treasury 960 |
+| 2 | SFA | 500 | 50,000 | 47,000 | **Settled** at 48,500 to Node A — seller 48,015, treasury 485 |
+| 3 | SFA | 700 | 70,000 | 63,000 | **Open** — Node B standing at 66,850, above the floor, window still running |
+| 4 | SFA | 300 | 30,000 | 29,500 | **Queued** — the window closed with no bid, so it took position 0 in the FIFO |
+| 5 | ECH | 1,000 | 100,000 | 92,000 | **Open** — Node B standing at 75,000, *below* the seller's floor. Nothing is force-filled |
+| 6 | ECH | 500 | 50,000 | 45,000 | **Settled** at 48,000 to Node A — seller 47,520, treasury 480 |
+| 7 | ECH | 150 | 15,000 | 14,000 | **Cancelled** by the seller before any bid arrived; the 150 ECH went back |
+
+Exit #4 is the case worth understanding: no Node wanted it at 29,500 on a 30,000 reference —
+a 167 bps discount, tighter than either Node's floor — so the window simply expired and the
+position took a public place in line instead of being sold at a price the seller refused.
+`close` only works once `ledger.timestamp() > closes_at`, and the ledger clock lags wall clock
+by a few seconds; calling it exactly at the deadline returns `Error(Contract, #322)`
+(`StillBidding`). Wait, then call again.
+
+Exit #5 is the other one: a real bid on the table that the seller's floor rejects. The exit
+stays open — the contract does not talk the seller down and does not talk the Node up.
+
+### What exit #1 proved
 
 Two refusals on the way there, both correct, and worth keeping because they are the design
 working rather than failing:
@@ -104,6 +125,17 @@ number. That is what the disjoint ranges buy.
 
 Node A's exposure stayed at 96,000 **after** the payout. That is deliberate: A now holds the
 asset, and only A can mark the position divested.
+
+### Two more refusals, from the ECH round
+
+Both are the vault keeping its own numbers, surfacing through an `exit_auction` call:
+
+* Node A bid **97,500** on exit #5 → `Error(Contract, #30)`, `lp_vault::SingleFillCapExceeded`.
+  `max_single_fill_bps` is 3,000, so one exit may take at most 30% of A's 255,500 capital at
+  the time — 76,650. A wanting the position does not raise A's own concentration limit.
+* Node B bid **48,000** on exit #6 → `Error(Contract, #22)`, `lp_vault::ExposureExceeded`.
+  B had 75,000 of its 80,000 ECH ceiling already committed to its exit #5 bid. The standing
+  bid is real money reserved, not an intention.
 
 ### `MIN_BACKING_AGE` gates the first bid
 
