@@ -24,6 +24,15 @@ SAC, so holders need no trustline.
 |---|---|---|
 | Test USDC | `CCPNESXPESH5F7WOOWYPLPTLK2PICRP7DXGNGJPPH3YJ3XZVEGKAJL2I` | 7 |
 | Solar Farm Alpha (SFA) — the demo RWA | `CDPHF6JRRPAG2ZHEQCR3CG4JYBYDAEMPYIDSIWGGVUEJNRWAYG2E7VTS` | 0 |
+| EV Charging Hub Beta (ECH) — second demo RWA, added 2026-08-18 | `CCY2BBNDFHRXM76SJT64BYJ4YSOBSK6V6SX6WG3S57RJINFZNWKOB53X` | 0 |
+
+A single asset makes an asset-agnostic layer look asset-specific: with one token
+on screen there is no way to tell whether a queue, an appetite or a balance is
+per-asset or global. ECH exists so the app has two of them. It was deployed the
+same way as SFA — same wasm, `initialize` under the deployer, 10,000 minted to
+the seller, then the mint handed to the faucet — and both nodes carry a standing
+appetite on it (A: 100,000 ceiling / 250 bps floor, B: 80,000 / 400 bps), so it
+is biddable and not just displayable.
 
 **These are test tokens.** They carry no value and are not the real USDC SAC. Mainnet USDC
 is `CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75`.
@@ -38,7 +47,10 @@ layer's ranges. Nothing about it is intended for mainnet.
 
 | Contract ID | Cooldown | Drip |
 |---|---|---|
-| `CAJHMAFYVO7LDRUDQFYIJYSVXR6UJL55AR7LLU6EEWDFUVQSMWO6YV4G` | 3,600s per wallet per token | 10,000 USDC · 1,000 SFA |
+| `CAJHMAFYVO7LDRUDQFYIJYSVXR6UJL55AR7LLU6EEWDFUVQSMWO6YV4G` | 3,600s per wallet per token | 10,000 USDC · 1,000 SFA · 1,000 ECH |
+
+`tokens()` is the tap's own list, and the app reads it rather than carrying one,
+so `set_drip` is the whole of adding a token — no page change was needed for ECH.
 
 ```bash
 stellar contract invoke --id CAJHMAFYVO7LDRUDQFYIJYSVXR6UJL55AR7LLU6EEWDFUVQSMWO6YV4G \
