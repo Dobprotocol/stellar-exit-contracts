@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  # The lockfile is committed on purpose (see .gitignore): a SEP-55 release has
+  # to be reproducible, so CI must fail if a build would silently resolve a
+  # different dependency graph than the one that was reviewed.
+  CARGO_NET_RETRY: 3
+
+jobs:
+  check:
+    name: fmt, clippy, tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        run: |
+          rustup update stable
+          rustup default stable
+          rustup component add rustfmt clippy
+          rustup target add wasm32v1-none
+
+      - name: Versions
+        run: rustc --version && cargo --version
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Formatting
+        run: cargo fmt --all -- --check
+
+      # -D warnings is the point of the gate. --all-targets covers the test
+      # modules too, which is where most of the lint debt lived.
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Tests
+        run: cargo test --workspace --locked
+
+      # Building for the contract target catches anything that compiles under
+      # std but not on-chain — a no_std slip, or a dependency that pulls in the
+      # host. This is the same target the release workflow builds.
+      - name: Build wasm
+        run: cargo build --release --target wasm32v1-none --workspace --locked
+
+      - name: Report wasm sizes
+        run: ls -l target/wasm32v1-none/release/*.wasm

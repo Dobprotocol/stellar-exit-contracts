@@ -1,0 +1,66 @@
+name: Build and Release Contracts
+
+# One `v*` tag releases the whole layer. The four contracts are deployed
+# together and their addresses are wired into each other's Config, so shipping
+# them independently would only invite a mismatched set on-chain. The reusable
+# workflow builds a release name out of the package and its path, so four jobs
+# on the same tag produce four distinct releases rather than colliding.
+#
+# The testnet faucet is deliberately absent: it is scaffolding, not part of the
+# exit layer, and it should never carry an attested build that makes it look
+# like one.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+  attestations: write
+
+jobs:
+  lp-vault:
+    uses: stellar-expert/soroban-build-workflow/.github/workflows/release.yml@main
+    with:
+      release_name: ${{ github.ref_name }}
+      release_description: 'LP Vault — Liquidity Node capital, appetite and exposure accounting'
+      package: 'lp-vault'
+      relative_path: 'contracts/lp_vault'
+      home_domain: 'dobprotocol.com'
+    secrets:
+      release_token: ${{ secrets.GITHUB_TOKEN }}
+
+  settlement-router:
+    uses: stellar-expert/soroban-build-workflow/.github/workflows/release.yml@main
+    with:
+      release_name: ${{ github.ref_name }}
+      release_description: 'Settlement Router — atomic asset-for-USDC settlement with a seller-side floor'
+      package: 'settlement-router'
+      relative_path: 'contracts/settlement_router'
+      home_domain: 'dobprotocol.com'
+    secrets:
+      release_token: ${{ secrets.GITHUB_TOKEN }}
+
+  fifo-queue:
+    uses: stellar-expert/soroban-build-workflow/.github/workflows/release.yml@main
+    with:
+      release_name: ${{ github.ref_name }}
+      release_description: 'FIFO Queue — the public place in line for exits no Node filled'
+      package: 'fifo-queue'
+      relative_path: 'contracts/fifo_queue'
+      home_domain: 'dobprotocol.com'
+    secrets:
+      release_token: ${{ secrets.GITHUB_TOKEN }}
+
+  exit-auction:
+    uses: stellar-expert/soroban-build-workflow/.github/workflows/release.yml@main
+    with:
+      release_name: ${{ github.ref_name }}
+      release_description: 'Exit Auction — the bidding window Nodes compete in, and the entry point for an exit'
+      package: 'exit-auction'
+      relative_path: 'contracts/exit_auction'
+      home_domain: 'dobprotocol.com'
+    secrets:
+      release_token: ${{ secrets.GITHUB_TOKEN }}
