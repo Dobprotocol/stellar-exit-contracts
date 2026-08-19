@@ -75,6 +75,22 @@ Amounts are decimal strings in the token's own base units — USDC at 7 decimals
 the demo RWAs at 0. Nothing here divides by 10^7 for you, on purpose: an audit
 log that quietly rounds is not one.
 
+## How it runs on prod
+
+Cloned to `/opt/stellar-exit-contracts`, data in `/var/lib/dobdex-exit-monitor`,
+registered as PM2 `exit-monitor` from `ecosystem.config.js`. Between ticks the
+process shows as **stopped** — that is the correct shape for a cron job, not a
+fault. `sudo pm2 logs exit-monitor` shows one line per pass.
+
+The snapshot is served straight off disk by nginx at
+**<https://dex.dobprotocol.com/exit-layer.json>** (`location = /exit-layer.json`
+in the dex vhost). No process needs to be up for it to load: the file is
+rewritten atomically, so a reader either gets the previous snapshot or the new
+one, never half of one.
+
+After a `git pull` on prod, run `npm install --omit=dev` in this directory once
+— `node_modules` is gitignored.
+
 ## Adding a network
 
 `config.js` is the whole of it: point `rpcUrl` at another RPC and replace the
