@@ -154,3 +154,41 @@ is the disjoint-error-range design paying off: the code is **24**, from `lp_vaul
 
 Any script that deploys and immediately settles will hit this. Set appetites, wait the hour,
 then bid.
+
+---
+
+## Reproducible builds — tag `v0.1.0`
+
+`release.yml` fires on any `v*` tag and runs the
+[stellar-expert/soroban-build-workflow](https://github.com/stellar-expert/soroban-build-workflow)
+once per contract. One tag produces four GitHub releases, because that workflow bakes the
+package and path into the release name:
+
+| Contract | Release asset | sha256 of the asset |
+|---|---|---|
+| `lp_vault` | `lp-vault_v0.1.0.wasm` | `eb2186726554d6fb74dd3b7ee894476d185769859f1365c2f034d31d9edc7de1` |
+| `exit_auction` | `exit-auction_v0.1.0.wasm` | `01172377dc287195c46cbdf930ff3ac28d0c3b6cc4b013565e0eae120c0124af` |
+| `settlement_router` | `settlement-router_v0.1.0.wasm` | `9d38449fb85247f37e68c733fa89d64f6865a2946515522d0503a762ee0a62e9` |
+| `fifo_queue` | `fifo-queue_v0.1.0.wasm` | `ddf20ce9d0c46b238f1fcaea53449d6593e871f35ecf4feb3c697e00c3a94576` |
+
+Each release carries a GitHub build attestation tying the wasm to this commit and workflow.
+
+### The deployed testnet contracts are NOT these builds
+
+Read this before pointing anyone at an attestation as proof of what is running. The four
+contracts listed at the top of this file were uploaded from a local
+`cargo build --release`; the release workflow builds with `stellar contract build --optimize`
+on stellar-cli 27.0.0 and injects `source_repo` / `home_domain` contract metadata. Different
+bytes, necessarily — the metadata is part of the wasm. The on-chain hashes today are:
+
+| Contract | On-chain wasm (sha256 of `stellar contract fetch`) |
+|---|---|
+| `lp_vault` | `404b466fce70228f50b032b37b7453af11ce4f968d7ef3d206fbcaa90fcca7a9` |
+| `settlement_router` | `78bc6a8f614201325148f52027532e3f301d8cdefb1bc9b1cfe3e79828035f73` |
+| `fifo_queue` | `c50dd6f00dc6a47aaf688833f2ffc52ba56f40f8269276545473e0b4f80e603d` |
+| `exit_auction` | `66a8a36369dfaa3347b42dc2c5be14c1a4a90746372265fdacf6ba3ce9b5a97c` |
+
+Same source, different build. Making the live contracts verifiable means redeploying from
+the release assets — which is a fresh deploy, not an upgrade, since none of these four
+implement `upgrade`. Worth doing before mainnet; not worth doing to a testnet that has live
+exits and a queue standing in it.
