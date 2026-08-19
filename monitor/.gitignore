@@ -1,0 +1,5 @@
+node_modules/
+# The log and everything derived from it. Operational data does not belong in
+# the repo: it must survive a `git pull` on prod, and a deploy must never have
+# to merge it.
+.data/

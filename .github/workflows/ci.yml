@@ -51,3 +51,17 @@ jobs:
 
       - name: Report wasm sizes
         run: ls -l target/wasm32v1-none/release/*.wasm
+
+  monitor:
+    name: monitor syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # The monitor ships no tests worth a runner — it is a thin shell around
+      # an RPC — but a syntax error in it would not surface until a cron tick
+      # on prod failed silently at 3am. This catches that much for free.
+      - name: Parse
+        run: for f in monitor/*.js; do node --check "$f"; done

@@ -1,0 +1,16 @@
+{
+  "name": "exit-layer-monitor",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Indexes the exit layer's Soroban events into an append-only log and a derived snapshot.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "once": "node index.js",
+    "reset": "node index.js --reset"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^14.3.0"
+  },
+  "engines": { "node": ">=20" }
+}
